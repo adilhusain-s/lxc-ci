@@ -499,6 +499,14 @@ packages:
     - vm
 
   - packages:
+    - grub-ieee1275
+    action: install
+    architectures:
+    - ppc64el
+    types:
+    - vm
+
+  - packages:
     - shim-signed
     action: install
     architectures:
@@ -648,6 +656,26 @@ actions:
 
     update-grub
     sed -i "s#root=[^ ]*#root=${DISTROBUILDER_ROOT_UUID}#g" /boot/grub/grub.cfg
+  architectures:
+  - amd64
+  - arm64
+  types:
+  - vm
+
+- trigger: post-files
+  action: |-
+    #!/bin/sh
+    set -eux
+
+    # Install GRUB for PowerPC IEEE1275 (used by SLOF on pseries)
+    LOOP_DEV="${DISTROBUILDER_LOOP_DEVICE}"
+    if [ -n "${LOOP_DEV}" ]; then
+      grub-install --target=powerpc-ieee1275 "${LOOP_DEV}p1"
+    fi
+    grub-mkconfig -o /boot/grub/grub.cfg
+    sed -i "s#root=[^ ]*#root=${DISTROBUILDER_ROOT_UUID}#g" /boot/grub/grub.cfg
+  architectures:
+  - ppc64el
   types:
   - vm
 
