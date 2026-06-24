@@ -670,7 +670,9 @@ actions:
     # Install GRUB for PowerPC IEEE1275 (used by SLOF on pseries)
     LOOP_DEV="${DISTROBUILDER_LOOP_DEVICE}"
     if [ -n "${LOOP_DEV}" ]; then
-      grub-install --target=powerpc-ieee1275 --no-nvram \"${LOOP_DEV}p1\" || grub-install --target=powerpc-ieee1275 \"${LOOP_DEV}p1\"
+      # /dev/nvram may not exist in the build chroot
+      touch /dev/nvram 2>/dev/null || true
+      grub-install --target=powerpc-ieee1275 \"${LOOP_DEV}p1\" 2>&1 || grub-install --target=powerpc-ieee1275 --no-nvram \"${LOOP_DEV}p1\"
     fi
     grub-mkconfig -o /boot/grub/grub.cfg
     sed -i "s#root=[^ ]*#root=${DISTROBUILDER_ROOT_UUID}#g" /boot/grub/grub.cfg
