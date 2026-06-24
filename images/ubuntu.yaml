@@ -670,9 +670,16 @@ actions:
     # Install GRUB for PowerPC IEEE1275 (used by SLOF on pseries)
     LOOP_DEV="${DISTROBUILDER_LOOP_DEVICE}"
     if [ -n "${LOOP_DEV}" ]; then
-      # /dev/nvram may not exist in the build chroot
+      # Create /dev/nvram if missing (chroot may not have it)
+      test -c /dev/nvram || mknod /dev/nvram c 10 144 2>/dev/null || true
+      # Create device.map so GRUB can find the loop device in the chroot
+      mkdir -p /boot/grub
+      echo "(hd0) ${LOOP_DEV}" > /boot/grub/device.map
+      # Try partition device first (Fedora GRUB needs this), fall back to whole disk
       touch /dev/nvram 2>/dev/null || true
-      grub-install --target=powerpc-ieee1275 \"${LOOP_DEV}p1\" 2>&1 || grub-install --target=powerpc-ieee1275 --no-nvram \"${LOOP_DEV}p1\"
+      if ! grub-install --target=powerpc-ieee1275 "${LOOP_DEV}p1"; then
+        grub-install --target=powerpc-ieee1275 --no-nvram "${LOOP_DEV}p1"
+      fi
     fi
     grub-mkconfig -o /boot/grub/grub.cfg
     sed -i "s#root=[^ ]*#root=${DISTROBUILDER_ROOT_UUID}#g" /boot/grub/grub.cfg
